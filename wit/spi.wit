@@ -1,0 +1,107 @@
+package wasi:i2c@0.2.0-draft;
+
+interface spi {
+
+    enum clock-phase {
+        CPHA_0,
+        CPHA_1
+    }
+
+    enum clock-polarity {
+        CPOL_0,
+        CPOL_1
+    }
+
+    enum bit-order {
+        /// hardware generates LSB first output.
+        LSB_FIRST,
+        
+        /// hardware generates MSB first output.
+        MSB_FIRST
+    }
+
+    /// Format error reasons.
+    enum format-reason {
+        /// Not supported databit width.
+        databits,
+
+        /// Not supported clock-phase.
+        cpha,
+
+        /// Not supported clock-polarity.
+        cpol,
+
+        /// Not supported bit-order.
+        order
+    }
+
+    /// Error codes.
+    variant error-code {
+        /// Not error.
+        okay,
+
+        /// Not error, but IO pending. maybe DMA.
+        pending,
+
+        /// No memory to allocate for `xfer`.
+        no-memory,
+
+        /// Requested feature is not supported by hardware.
+        not-supported,
+
+        /// Invalid or not supported format parameter specified.
+        invalid-format(format-reason),
+
+        /// A different error occurred.
+        other
+    }
+    
+    resource spi {
+        /// set baudrate and returns adjusted baudrate that supported by hardware.
+        set-baudrate: func(hz: u32) -> u32;
+
+        /// get working baudrate.
+        get-baudrate: func() -> u32;
+
+        /// set data format.
+        set-format: func(databits: u32, cpha: clock-phase, cpol: clock-polarity, order: bit-order) -> error-code;
+
+        /// set master or slave.
+        set-slave: func(slave: boolean) -> error-code;
+
+        /// returns whether the hardware is generating output now.
+        is-busy: func() -> boolean;
+
+        /// returns whether a read can be done on hardware.
+        can-write: func() -> boolean;
+
+        /// returns whether an write can be done on hardware.
+        can-read: func() -> boolean;
+
+        /// write bytes and read bytes from SPI channel.
+        xfer: func(write: list<u8>) -> result<list<u8>, error-code>;
+
+        /// read bytes and write dummy bytes repeatly.
+        read: func(len: u32, dummy-write: u8) -> result<list<u8>, error-code>;
+
+        /// write bytes but no read.
+        write: func(data: list<u8>) -> error-code;
+
+        /// begin to xfer bytes asynchronously using DMA, etc...
+        /// if the task completed before returning error-code, this returns `okay`.
+        /// if the task couldn't be completed but not error, this returns `pending`.
+        /// otherwise, returns error code.
+        begin_xfer: func(write: list<u8>, no-read: boolean) -> error-code;
+        
+        /// begin to read bytes asynchronously using DMA, etc...
+        /// if the task completed before returning error-code, this returns `okay`.
+        /// if the task couldn't be completed but not error, this returns `pending`.
+        /// otherwise, returns error code.
+        begin_read: func(len: u32, dummy-write: u8) -> error-code;
+        
+        /// complete the xfer task that began by `begin_xfer`, `begin_read`.
+        /// if the task completed successfully, this returns read bytes (including zero length).
+        /// otherwise, returns error code.
+        end_xfer: func() -> result<list<u8>, error-code>;
+    }
+}
