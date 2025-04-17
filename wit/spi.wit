@@ -102,6 +102,7 @@ interface spi {
         /// complete the xfer task that began by `begin_xfer`, `begin_read`.
         /// if the task completed successfully, this returns read bytes (including zero length).
         /// otherwise, returns error code.
+        /// e.g. if the task is not completed yet, returns `pending`.
         end_xfer: func() -> result<list<u8>, error-code>;
     }
 }
